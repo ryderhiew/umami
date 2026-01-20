@@ -1,15 +1,18 @@
 ---
 services:
-  umami:
-    image: ghcr.io/umami-software/umami:latest
+  hefes-analytics:
+    image: ghcr.io/ryderhiew/hefes-analytics:latest
+    build: .
     ports:
-      - "3000:3000"
+      - "3001:3000"
     environment:
-      DATABASE_URL: postgresql://umami:umami@db:5432/umami
+      DATABASE_URL: postgresql://hefes:hefes@hefes-db:5432/hefes_analytics
       APP_SECRET: replace-me-with-a-random-string
     depends_on:
-      db:
+      hefes-db:
         condition: service_healthy
+    networks:
+      - hefes-network
     init: true
     restart: always
     healthcheck:
@@ -17,19 +20,28 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-  db:
-    image: postgres:15-alpine
+  hefes-db:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
     environment:
-      POSTGRES_DB: umami
-      POSTGRES_USER: umami
-      POSTGRES_PASSWORD: umami
+      POSTGRES_DB: hefes_analytics
+      POSTGRES_USER: hefes
+      POSTGRES_PASSWORD: hefes
     volumes:
-      - umami-db-data:/var/lib/postgresql/data
+      - hefes-db-data:/var/lib/postgresql/data
+    networks:
+      - hefes-network
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
+
+networks:
+  hefes-network:
+    driver: bridge
+
 volumes:
-  umami-db-data:
+  hefes-db-data:
